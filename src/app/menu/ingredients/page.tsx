@@ -89,7 +89,7 @@ const Ingredients = () => {
 
   const isExitedName = useCallback(async (name : string) => {
     const res = await client.query({ query: CHECK_INGREDIENTNAME,variables:{name: name}});
-    return res.data.success;
+    return res.data.checkIngredientName.success;
   }, []);
 
   return (
@@ -115,9 +115,7 @@ const Ingredients = () => {
             { type: "required", message: "Vui lòng nhập tên nguyên liệu" },
             {type: "custom", message:"Tên nguyên liệu đã có trong hệ thống.", 
               validationCallback: async (e) => {
-                await isExitedName(e.value)
-                console.log(e.value)
-                return true;
+                return await  isExitedName(e.value);
               }
             }
           ]}
@@ -185,12 +183,14 @@ const Ingredients = () => {
                   onClick: async (e: any) => {
                     const rowKey =
                       dataGrid.current?.instance.option("editing.editRowKey");
+                      console.log(rowKey)
                     const rowData = dataGrid.current?.instance
                       .getVisibleRows()
                       .find((row) => row.key === rowKey)?.data;
                     const files =
                       fileUploaderRef.current?.instance.option("value");
-                    if (files && files.length > 0) {
+                    if (files && files.length > 0 && !(rowKey as string).startsWith("_DX_KEY_"))
+                   {
                       await updateDataWithImage(e, rowData);
                     } else {
                       dataGrid.current?.instance.saveEditData();

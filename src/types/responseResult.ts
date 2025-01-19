@@ -1,6 +1,6 @@
 export interface ResponseResult<T>{
-    success: Boolean,
-    message : String,
+    success: boolean,
+    message?: string,
     status: number,
-    data: T
+    data?: T
 }
