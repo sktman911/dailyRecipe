@@ -20,6 +20,20 @@ export const ingredientResolver = {
         ...doc.data(),
       })) as Ingredient[];
     },
+    checkIngredientName: async (_: unknown, {name}:{name: string}): Promise<ResponseResult<Ingredient>> => {
+      const res = await isValidName(name);
+      if(res) {
+        return {
+          success: true,
+          status: 200
+        }
+      }
+      
+      return {
+        success: false,
+        status: 400
+      }
+    }
   },
   Mutation: {
     addIngredient: async (
