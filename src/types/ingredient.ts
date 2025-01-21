@@ -8,8 +8,3 @@ export interface Ingredient {
     createdDate: string;
     createdBy: string;
   }
-
-export interface IngredientQuantity{
-    id: string;
-    quantity: number;
-}

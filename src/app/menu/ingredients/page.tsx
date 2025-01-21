@@ -1,12 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 import DataGrid, { Column, Editing } from "devextreme-react/data-grid";
-import { AsyncRule } from "devextreme-react/validator";
 import LoadPanel from "devextreme-react/load-panel";
 import { SpeedDialAction } from "devextreme-react/speed-dial-action";
 import FileUploader from "devextreme-react/file-uploader";
 import DefaultLayout from "@/src/components/Layouts/DefaultLayout";
-import { store } from "@/src/stores/ingredientStore";
+import { ingredientStore } from "@/src/stores/ingredientStore";
 import { useCallback, useRef } from "react";
 import useImageUpload from "@/src/hooks/useImageUpload";
 import React from "react";
@@ -60,7 +59,7 @@ const Ingredients = () => {
       e.data.image = uploadedImage?.url;
       e.data.imagePublicId = uploadedImage?.publicId;
     }
-    await store.insert(e.data);
+    await ingredientStore.insert(e.data);
     dataGrid.current?.instance.refresh();
     dataGrid.current?.instance.cancelEditData();
     loadPanel.current?.instance.option("visible", false);
@@ -80,7 +79,7 @@ const Ingredients = () => {
 
     const { __typename, ...newData } = data;
 
-    await store.update(rowData.id, newData);
+    await ingredientStore.update(rowData.id, newData);
     dataGrid.current?.instance.refresh();
     dataGrid.current?.instance.cancelEditData();
     loadPanel.current?.instance.option("visible", false);
@@ -101,7 +100,7 @@ const Ingredients = () => {
   return (
     <DefaultLayout>
       <DataGrid
-        dataSource={store}
+        dataSource={ingredientStore}
         showBorders={true}
         height={"auto"}
         noDataText="Chưa có dữ liệu"
