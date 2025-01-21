@@ -1,11 +1,13 @@
 "use client";
 
 import DataGrid, { Column, Editing } from "devextreme-react/data-grid";
+import { SelectBox } from "devextreme-react";
 import { Button } from "devextreme-react/button";
 import { Popup } from "devextreme-react/popup";
 import { SpeedDialAction } from "devextreme-react/speed-dial-action";
 import DefaultLayout from "@/src/components/Layouts/DefaultLayout";
 import { store } from "@/src/stores/recipeStore";
+import { ingredientStore } from "@/src/stores/ingredientStore";
 import { useCallback, useRef, useState } from "react";
 import { Recipe } from "@/src/types/recipe";
 import { IngredientQuantity } from "@/src/types/ingredient";
@@ -37,29 +39,43 @@ const Recipes = () => {
     );
   };
 
-  const savedIngredients = (e: any) => {
-    // if (e.changes[0].type !== "remove") {
-      const ingredientsData = ingredientsRef.current?.instance
-        .getDataSource()
-        .items();
-      const newRecipe = e.data;
-      newRecipe.ingredients = ingredientsData;
-      const dataGridInstance = dataGrid.current?.instance;
-      dataGridInstance?.saveEditData();
+  const savedIngredient = (e: any) => {};
+
+  const insertRecipe = (e: any) => {
+    const ingredientsData = ingredientsRef.current?.instance
+      .getDataSource()
+      .items();
+    const newRecipe = e.data;
+    newRecipe.ingredients = ingredientsData;
+    const dataGridInstance = dataGrid.current?.instance;
+    // dataGridInstance?.saveEditData();
   };
 
   const ingredientsGrid = (cellInfo: any) => {
-    const ingredientList = cellInfo.data.ingredients;
+    const ingredientList = Array.isArray(cellInfo.data.ingredients)
+      ? cellInfo.data.ingredients
+      : [];
 
     if (cellInfo.row.isNewRow) {
       return (
         <DataGrid
           ref={ingredientsRef}
           dataSource={[]}
-          keyExpr="name"
+          keyExpr="id"
           showBorders={true}
         >
-          <Column dataField="name" caption="Tên nguyên liệu" />
+          <Column
+            dataField="id"
+            caption="Tên nguyên liệu"
+            editorOptions={{
+              placeholder: "Chọn nguyên liệu",
+            }}
+            lookup={{
+              dataSource: ingredientStore,
+              displayExpr: "name",
+              valueExpr: "id",
+            }}
+          />
           <Column dataField="quantity" caption="Số lượng" dataType="number" />
           <Editing allowAdding allowDeleting allowUpdating mode="batch" />
         </DataGrid>
@@ -70,12 +86,32 @@ const Recipes = () => {
       <DataGrid
         ref={ingredientsRef}
         dataSource={ingredientList}
-        key="name"
+        keyExpr="id"
         showBorders={true}
+        onRowInserting={(e) => {
+          const newIngredientList = [...ingredientList, e.data];
+          console.log(ingredientList)
+        }}
       >
-        <Column dataField="name" caption="Tên nguyên liệu" />
+        <Column
+          dataField="id"
+          caption="Tên nguyên liệu"
+          editorOptions={{
+            placeholder: "Chọn nguyên liệu",
+          }}
+          lookup={{
+            dataSource: ingredientStore,
+            displayExpr: "name",
+            valueExpr: "id",
+          }}
+        />
         <Column dataField="quantity" caption="Số lượng" dataType="number" />
-        <Editing allowAdding allowDeleting allowUpdating mode="batch" />
+        <Editing
+          allowAdding
+          allowDeleting
+          allowUpdating
+          mode="batch"
+        />
       </DataGrid>
     );
   };
@@ -88,8 +124,8 @@ const Recipes = () => {
         height={"auto"}
         ref={dataGrid}
         noDataText="Chưa có dữ liệu"
-        onRowInserting={savedIngredients}
-        onRowUpdating={savedIngredients}
+        onRowInserting={insertRecipe}
+        // onRowUpdating={savedRecipe}
       >
         <Column
           dataField="STT"
@@ -120,7 +156,7 @@ const Recipes = () => {
             items: [
               { dataField: "name" },
               { dataField: "description" },
-              { dataField: "ingredients", colSpan: 2, isRequired: true },
+              { dataField: "ingredients", colSpan: 2 },
             ],
           }}
         ></Editing>
@@ -136,7 +172,7 @@ const Recipes = () => {
       >
         <DataGrid dataSource={selectedData} keyExpr="name" showBorders={true}>
           <Column dataField="name" caption="Tên nguyên liệu" />
-          <Column dataField="quantity" caption="Số lượng" dataType="number"  />
+          <Column dataField="quantity" caption="Số lượng" dataType="number" />
         </DataGrid>
       </Popup>
     </DefaultLayout>

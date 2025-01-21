@@ -8,60 +8,63 @@ const isValidName = async (ingredientName: string): Promise<boolean> => {
     .collection("ingredients")
     .where("name", "==", ingredientName)
     .get();
-  return !snapshot.empty;
+  return snapshot.empty;
 };
 
 export const ingredientResolver = {
   Query: {
     ingredients: async (): Promise<Ingredient[]> => {
       const snapshot = await db.collection("ingredients").get();
-      return snapshot.docs.map((doc) => ({
+      return snapshot.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data(),
       })) as Ingredient[];
     },
-    checkIngredientName: async (_: unknown, {name}:{name: string}): Promise<ResponseResult<Ingredient>> => {
+
+    checkIngredientName: async (
+      _: any,
+      { name }: { name: string }
+    ): Promise<ResponseResult<Ingredient>> => {
       const res = await isValidName(name);
-      if(res) {
+      if (!res) {
         return {
-          success: true,
-          status: 200
-        }
+          success: false,
+          status: 200,
+        };
       }
-      
+
       return {
-        success: false,
-        status: 400
-      }
-    }
+        success: true,
+        status: 400,
+      };
+    },
   },
   Mutation: {
     addIngredient: async (
       _: unknown,
       { ingredient }: { ingredient: Ingredient }
     ): Promise<ResponseResult<Ingredient | null>> => {
-
-      try{
+      try {
         ingredient.createdDate = new Date().toISOString();
-      const isExisted = await isValidName(ingredient.name);
-      if (isExisted) {
-        return {
-          success: false,
-          status: 400,
-          message: "Tên nguyên liệu đã có trên hệ thống.",
-          data: null,
-        };
-      }
+        const isExisted = await isValidName(ingredient.name);
+        if (isExisted) {
+          return {
+            success: false,
+            status: 400,
+            message: "Tên nguyên liệu đã có trên hệ thống.",
+            data: null,
+          };
+        }
 
-      const docRef = await db.collection("ingredients").add(ingredient);
-      const snapshot = await docRef.get();
-      return {
-        status: 200,
-        success: true,
-        message: "Nguyên liệu đã được thêm vào hệ thống.",
-        data: { id: snapshot.id, ...snapshot.data() } as Ingredient,
-      };
-      }catch(err){
+        const docRef = await db.collection("ingredients").add(ingredient);
+        const snapshot = await docRef.get();
+        return {
+          status: 200,
+          success: true,
+          message: "Nguyên liệu đã được thêm vào hệ thống.",
+          data: { id: snapshot.id, ...snapshot.data() } as Ingredient,
+        };
+      } catch (err) {
         return {
           status: 400,
           success: false,
@@ -82,8 +85,8 @@ export const ingredientResolver = {
           success: false,
           status: 400,
           data: null,
-          message: "Nguyên liệu không tồn tại trong hệ thống"
-        }
+          message: "Nguyên liệu không tồn tại trong hệ thống",
+        };
       }
 
       await ingredientRef.update({ ...docRef.data(), ...ingredient });
@@ -92,8 +95,8 @@ export const ingredientResolver = {
         success: true,
         status: 200,
         message: "Sửa thông tin thành công.",
-        data:  { id: updatedDoc.id, ...updatedDoc.data() } as Ingredient
-      }
+        data: { id: updatedDoc.id, ...updatedDoc.data() } as Ingredient,
+      };
     },
 
     removeIngredient: async (
@@ -107,8 +110,8 @@ export const ingredientResolver = {
           success: false,
           status: 400,
           data: null,
-          message: "Nguyên liệu không tồn tại trong hệ thống"
-        }
+          message: "Nguyên liệu không tồn tại trong hệ thống",
+        };
       }
 
       const ingredient = { id: docRef.id, ...docRef.data() } as Ingredient;
@@ -120,14 +123,13 @@ export const ingredientResolver = {
         }
       }
 
-
       await ingredientRef.delete();
-      return{
+      return {
         success: true,
         status: 200,
         message: "Đã xóa nguyên liệu khỏi hệ thống",
-        data: ingredient
-      }
+        data: ingredient,
+      };
     },
   },
 };
