@@ -7,6 +7,7 @@ export const GET_RECIPES = gql`
       name
       description
       ingredients{
+        id
         name
         quantity
       }

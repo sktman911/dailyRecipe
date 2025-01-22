@@ -192,7 +192,6 @@ const Ingredients = () => {
                   onClick: async (e: any) => {
                     const rowKey =
                       dataGrid.current?.instance.option("editing.editRowKey");
-                    console.log(rowKey);
                     const rowData = dataGrid.current?.instance
                       .getVisibleRows()
                       .find((row) => row.key === rowKey)?.data;

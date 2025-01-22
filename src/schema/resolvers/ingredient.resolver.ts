@@ -8,7 +8,7 @@ const isValidName = async (ingredientName: string): Promise<boolean> => {
     .collection("ingredients")
     .where("name", "==", ingredientName)
     .get();
-  return snapshot.empty;
+  return !snapshot.empty;
 };
 
 export const ingredientResolver = {
@@ -26,7 +26,7 @@ export const ingredientResolver = {
       { name }: { name: string }
     ): Promise<ResponseResult<Ingredient>> => {
       const res = await isValidName(name);
-      if (!res) {
+      if (res) {
         return {
           success: false,
           status: 200,

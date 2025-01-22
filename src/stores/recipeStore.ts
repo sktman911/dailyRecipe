@@ -5,8 +5,8 @@ import { Recipe } from "../types/recipe";
 
 export const store = new CustomStore({
   key: "id",
-  load: () => {
-    return client
+  load: async () => {
+    return await client
       .query({
         query: GET_RECIPES,
       })

@@ -5,11 +5,11 @@ export interface Recipe {
     createdDate: string;
     description?: string;
     // category: number;
-    ingredients: [IngredientQuantity];    
+    ingredients: IngredientQuantity[];    
 }
 
 export interface IngredientQuantity{
-    id: string;
+    id?: string,
     quantity: number;
 }
 

@@ -8,8 +8,7 @@ import DefaultLayout from "@/src/components/Layouts/DefaultLayout";
 import { store } from "@/src/stores/recipeStore";
 import { ingredientStore } from "@/src/stores/ingredientStore";
 import { useCallback, useRef, useState } from "react";
-import { Recipe } from "@/src/types/recipe";
-import { IngredientQuantity } from "@/src/types/ingredient";
+import { Recipe, IngredientQuantity } from "@/src/types/recipe";
 
 const Recipes = () => {
   const [selectedData, setSelectedData] = useState<IngredientQuantity[]>([]);
@@ -38,7 +37,14 @@ const Recipes = () => {
     );
   };
 
-  const savedIngredient = (e: any) => {};
+  const updateRecipe = (e: any) => {
+    const ingredientsData = ingredientsRef.current?.instance
+      .getDataSource()
+      .items();
+    const newRecipe = e.newData;
+    console.log(newRecipe);
+    newRecipe.ingredients = ingredientsData;
+  };
 
   const insertRecipe = (e: any) => {
     const ingredientsData = ingredientsRef.current?.instance
@@ -46,15 +52,10 @@ const Recipes = () => {
       .items();
     const newRecipe = e.data;
     newRecipe.ingredients = ingredientsData;
-    const dataGridInstance = dataGrid.current?.instance;
-    // dataGridInstance?.saveEditData();
   };
 
   const ingredientsGrid = (cellInfo: any) => {
-    const ingredientList = Array.isArray(cellInfo.data.ingredients)
-      ? cellInfo.data.ingredients
-      : [];
-
+    let ingredientList = cellInfo.data.ingredients;
     if (cellInfo.row.isNewRow) {
       return (
         <DataGrid
@@ -88,8 +89,15 @@ const Recipes = () => {
         keyExpr="id"
         showBorders={true}
         onRowInserting={(e) => {
-          const newIngredientList = [...ingredientList, e.data];
-          console.log(ingredientList)
+          console.log(e)
+        }}
+        onRowUpdating={(e) => {
+          const ingredients = cellInfo.data.ingredients.map((ingredient: IngredientQuantity) => 
+            ingredient.id === e.key 
+              ? { ...ingredient, quantity: e.newData.quantity } 
+              : ingredient
+          ); 
+          cellInfo.data.ingredients = {...ingredients};  
         }}
       >
         <Column
@@ -105,12 +113,7 @@ const Recipes = () => {
           }}
         />
         <Column dataField="quantity" caption="Số lượng" dataType="number" />
-        <Editing
-          allowAdding
-          allowDeleting
-          allowUpdating
-          mode="batch"
-        />
+        <Editing allowAdding allowDeleting allowUpdating mode="batch" />
       </DataGrid>
     );
   };
@@ -124,7 +127,7 @@ const Recipes = () => {
         ref={dataGrid}
         noDataText="Chưa có dữ liệu"
         onRowInserting={insertRecipe}
-        // onRowUpdating={savedRecipe}
+        onRowUpdating={updateRecipe}
       >
         <Column
           dataField="STT"
