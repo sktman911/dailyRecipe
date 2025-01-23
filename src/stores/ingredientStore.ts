@@ -8,14 +8,20 @@ import {
 } from "../queries/ingredientQueries";
 import Swal from "sweetalert2";
 
+let cachedIngredients: any[] = [];
+
 export const ingredientStore = new CustomStore({
   key: "id",
+  byKey: async (key) => {
+    return cachedIngredients.find((i) => i.id === key) || null;
+  },
   load: async () => {
     return await client
       .query({
         query: GET_INGREDIENTS,
       })
       .then((res) => {
+        cachedIngredients = res.data.ingredients;
         return res.data.ingredients;
       })
       .catch((err) => {

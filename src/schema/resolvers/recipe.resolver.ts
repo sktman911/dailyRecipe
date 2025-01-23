@@ -65,6 +65,13 @@ export const recipeResolver = {
         throw new Error("Recipe not found");
       }
 
+      // const ingredientList = docRef.data()?.ingredients as IngredientQuantity[];
+      // if (ingredientList.length > 0) {
+      //   ingredientList.forEach((ingredient) => {
+          
+      //   })
+      // }
+
       await recipeRef.update({ ...docRef.data(), ...recipe });
       const updatedDoc = await recipeRef.get();
       return { id: updatedDoc.id, ...updatedDoc.data() } as Recipe;

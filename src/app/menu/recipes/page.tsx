@@ -54,14 +54,30 @@ const Recipes = () => {
     newRecipe.ingredients = ingredientsData;
   };
 
+  const savedIngredientWithoutUpdate = () => {
+    const ingredientsData = ingredientsRef.current?.instance
+      .getDataSource()
+      .items();
+    const rowKey = dataGrid.current?.instance.option("editing.editRowKey");
+    let rowData = dataGrid.current?.instance
+      .getVisibleRows()
+      .find((row) => row.key === rowKey)?.data;
+    if (rowData && !(rowKey as string).startsWith("_DX_KEY_")) {
+      const updatedData = { ...rowData, ingredients: ingredientsData };
+      rowData = updatedData;
+      console.log(rowData);
+      store.update(rowData.id, rowData);
+    }
+  };
+
   const ingredientsGrid = (cellInfo: any) => {
-    let ingredientList = cellInfo.data.ingredients;
+    let ingredientList = [...cellInfo.data.ingredients];
     if (cellInfo.row.isNewRow) {
       return (
         <DataGrid
           ref={ingredientsRef}
           dataSource={[]}
-          keyExpr="id"
+          key="id"
           showBorders={true}
         >
           <Column
@@ -86,18 +102,29 @@ const Recipes = () => {
       <DataGrid
         ref={ingredientsRef}
         dataSource={ingredientList}
-        keyExpr="id"
+        key="id"
         showBorders={true}
-        onRowInserting={(e) => {
-          console.log(e)
-        }}
-        onRowUpdating={(e) => {
-          const ingredients = cellInfo.data.ingredients.map((ingredient: IngredientQuantity) => 
-            ingredient.id === e.key 
-              ? { ...ingredient, quantity: e.newData.quantity } 
-              : ingredient
-          ); 
-          cellInfo.data.ingredients = {...ingredients};  
+        onSaving={(e) => {
+          if (e.changes.length > 0) {
+            const newDatas = [...ingredientList];
+            e.changes.forEach((change) => {
+              if (change.type === "update") {
+                e.cancel = true;
+                const index = newDatas.findIndex(
+                  (item) => item.id === change.key.id
+                );
+                if (index !== -1) {
+                  const {__typename, ...newData} = change.key;
+                  newDatas[index] = {...newData,quantity: change.data.quantity,};
+                }
+                ingredientsRef.current?.instance.saveEditData();
+              }
+            });
+            
+            const updateList = [...newDatas];
+            console.log(updateList);
+            ingredientsRef.current?.instance.option("dataSource", updateList);
+          }
         }}
       >
         <Column
@@ -128,6 +155,7 @@ const Recipes = () => {
         noDataText="Chưa có dữ liệu"
         onRowInserting={insertRecipe}
         onRowUpdating={updateRecipe}
+        onSaving={savedIngredientWithoutUpdate}
       >
         <Column
           dataField="STT"
