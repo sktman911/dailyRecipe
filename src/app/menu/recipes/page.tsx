@@ -42,7 +42,6 @@ const Recipes = () => {
       .getDataSource()
       .items();
     const newRecipe = e.newData;
-    console.log(newRecipe);
     newRecipe.ingredients = ingredientsData;
   };
 
@@ -64,7 +63,8 @@ const Recipes = () => {
       .find((row) => row.key === rowKey)?.data;
     if (rowData && !(rowKey as string).startsWith("_DX_KEY_")) {
       const updatedData = { ...rowData, ingredients: ingredientsData };
-      rowData = updatedData;
+      const { __typename, ...newUpdatedData } = updatedData;
+      rowData = newUpdatedData;
       console.log(rowData);
       store.update(rowData.id, rowData);
     }
@@ -102,6 +102,7 @@ const Recipes = () => {
       <DataGrid
         ref={ingredientsRef}
         dataSource={ingredientList}
+        loadPanel={{ enabled: true }}
         key="id"
         showBorders={true}
         onSaving={(e) => {
@@ -110,20 +111,22 @@ const Recipes = () => {
             e.changes.forEach((change) => {
               if (change.type === "update") {
                 e.cancel = true;
-                const index = newDatas.findIndex(
+                const index = ingredientList.findIndex(
                   (item) => item.id === change.key.id
                 );
                 if (index !== -1) {
-                  const {__typename, ...newData} = change.key;
-                  newDatas[index] = {...newData,quantity: change.data.quantity,};
+                  const { __typename, name, ...newData } = change.key;
+                  ingredientList[index] = {
+                    ...newData,
+                    quantity: change.data.quantity,
+                  };
                 }
-                ingredientsRef.current?.instance.saveEditData();
               }
             });
-            
-            const updateList = [...newDatas];
-            console.log(updateList);
-            ingredientsRef.current?.instance.option("dataSource", updateList);
+            ingredientsRef.current?.instance.option("dataSource", [
+              ...ingredientList,
+            ]);
+            console.log(ingredientList);
           }
         }}
       >
@@ -155,7 +158,7 @@ const Recipes = () => {
         noDataText="Chưa có dữ liệu"
         onRowInserting={insertRecipe}
         onRowUpdating={updateRecipe}
-        onSaving={savedIngredientWithoutUpdate}
+        // onSaving={savedIngredientWithoutUpdate}
       >
         <Column
           dataField="STT"
@@ -169,9 +172,10 @@ const Recipes = () => {
           dataField="ingredients"
           caption="Nguyên liệu"
           cellRender={renderButton}
-          editCellRender={ingredientsGrid}
+          // editCellRender={ingredientsGrid}
         />
         <Editing
+          allowAdding={true}
           allowUpdating={true}
           allowDeleting={true}
           mode="popup"
@@ -186,7 +190,7 @@ const Recipes = () => {
             items: [
               { dataField: "name" },
               { dataField: "description" },
-              { dataField: "ingredients", colSpan: 2 },
+              // { dataField: "ingredients", colSpan: 2 },
             ],
           }}
         ></Editing>
@@ -200,9 +204,15 @@ const Recipes = () => {
         height={400}
         showCloseButton={true}
       >
-        <DataGrid dataSource={selectedData} keyExpr="name" showBorders={true}>
+        <DataGrid
+          dataSource={selectedData}
+          keyExpr="id"
+          showBorders={true}
+          onSaving={savedIngredientWithoutUpdate}
+        >
           <Column dataField="name" caption="Tên nguyên liệu" />
           <Column dataField="quantity" caption="Số lượng" dataType="number" />
+          <Editing allowAdding allowDeleting allowUpdating />
         </DataGrid>
       </Popup>
     </DefaultLayout>
