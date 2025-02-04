@@ -9,40 +9,51 @@ export const recipeResolver = {
       const recipes = snapshot.docs.map(async (doc) => {
         const recipeData = doc.data() as Recipe;
 
-        // Ingredient id array
-        const ingredientIds = recipeData.ingredients.map(
-          (ingredient: IngredientQuantity) => ingredient.id
-        ) as Array<string>;
+        if (recipeData.ingredients && recipeData.ingredients.length > 0) {
+          // Ingredient id array
+          const ingredientIds = recipeData.ingredients.map(
+            (ingredient: IngredientQuantity) => ingredient.id
+          ) as Array<string>;
 
-        // DocumentReference array
-        const ingredientRefs = ingredientIds.map((id: string) => db.collection("ingredients").doc(id));
+          // DocumentReference array
+          const ingredientRefs = ingredientIds.map((id: string) =>
+            db.collection("ingredients").doc(id)
+          );
 
-        let ingredients: IngredientQuantity[] = [];
-        if (ingredientRefs.length > 0) {
+          let ingredients: IngredientQuantity[] = [];
+          if (ingredientRefs.length > 0) {
             const ingredientDocs = await db.getAll(...ingredientRefs);
 
-          ingredients = ingredientDocs.map((ingredientDoc) => {
-            const ingredientData = ingredientDoc.data() as Ingredient;
-            return {
-              id: ingredientDoc.id,
-              name: ingredientData.name,
-              quantity:
-                recipeData.ingredients.find(
-                  (i: any) => i.id === ingredientDoc.id
-                )?.quantity || 0,
-            } as IngredientQuantity;
-          });
-        }
+            ingredients = ingredientDocs.map((ingredientDoc) => {
+              const ingredientData = ingredientDoc.data() as Ingredient;
+              return {
+                id: ingredientDoc.id,
+                name: ingredientData.name,
+                quantity:
+                  recipeData.ingredients.find(
+                    (i: any) => i.id === ingredientDoc.id
+                  )?.quantity || 0,
+              } as IngredientQuantity;
+            });
+          }
 
-        return {
-          id: doc.id,
-          name: recipeData.name,
-          description: recipeData.description,
-          createdDate: recipeData.createdDate,
-          ingredients,
-        } as Recipe;
+          return {
+            id: doc.id,
+            name: recipeData.name,
+            description: recipeData.description,
+            createdDate: recipeData.createdDate,
+            ingredients,
+          } as Recipe;
+        } else {
+          return {
+            id: doc.id,
+            name: recipeData.name,
+            description: recipeData.description,
+            createdDate: recipeData.createdDate,
+          } as Recipe;
+        }
       });
-      return await Promise.all(recipes) as Recipe[];
+      return (await Promise.all(recipes)) as Recipe[];
     },
   },
   Mutation: {
@@ -65,13 +76,6 @@ export const recipeResolver = {
         throw new Error("Recipe not found");
       }
 
-      // const ingredientList = docRef.data()?.ingredients as IngredientQuantity[];
-      // if (ingredientList.length > 0) {
-      //   ingredientList.forEach((ingredient) => {
-          
-      //   })
-      // }
-
       await recipeRef.update({ ...docRef.data(), ...recipe });
       const updatedDoc = await recipeRef.get();
       return { id: updatedDoc.id, ...updatedDoc.data() } as Recipe;
@@ -86,6 +90,37 @@ export const recipeResolver = {
       await recipeRef.delete();
 
       return recipe;
+    },
+    updateIngredientsByRecipe: async (
+      _: unknown,
+      { id, ingredients }: { id: string; ingredients: IngredientQuantity[] }
+    ) => {
+      const recipeRef = await db.collection("recipes").doc(id);
+      const docRef = await recipeRef.get();
+      if (!docRef.exists) {
+        throw new Error("Recipe not found");
+      }
+
+      const oldIngredients = docRef.data()?.ingredients;
+
+      const ingredientMap = new Map(
+        oldIngredients.map((item: any) => [item.id, item])
+      );
+
+      ingredients.forEach((newItem: any) => {
+        if (ingredientMap.has(newItem.id)) {
+          ingredientMap.set(newItem.id, { ...newItem ,quantity: newItem.quantity });
+        } else {
+          ingredientMap.set(newItem.id, newItem);
+        }
+      });
+
+      const updatedIngredients = Array.from(ingredientMap.values());
+
+      await recipeRef.update({ ingredients: updatedIngredients });
+
+      const updatedDoc = await recipeRef.get();
+      return { id: updatedDoc.id, ...updatedDoc.data() } as Recipe;
     },
   },
 };

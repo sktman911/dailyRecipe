@@ -9,10 +9,14 @@ import { store } from "@/src/stores/recipeStore";
 import { ingredientStore } from "@/src/stores/ingredientStore";
 import { useCallback, useRef, useState } from "react";
 import { Recipe, IngredientQuantity } from "@/src/types/recipe";
+import client from "@/src/schema/client";
+import {
+  GET_RECIPES,
+  UPDATE_INGREDIENTS_BY_RECIPE,
+} from "@/src/queries/recipeQueries";
 
 const Recipes = () => {
-  const [selectedData, setSelectedData] = useState<IngredientQuantity[]>([]);
-
+  const [editRecipe, setEditRecipe] = useState<Recipe | any>(null);
   const dataGrid = useRef<DataGrid>(null);
   const ingredientsRef = useRef<DataGrid>(null);
   const popupRef = useRef<Popup>(null);
@@ -24,25 +28,21 @@ const Recipes = () => {
   }, [dataGrid]);
 
   const renderButton = (e: { data: Recipe }) => {
-    const ingredients = e.data.ingredients;
     return (
       <Button
         className="my-2"
         text="Xem nguyên liệu"
         onClick={() => {
-          setSelectedData(ingredients);
+          setEditRecipe(e.data);
+          const ingredients = e.data.ingredients;
+          ingredientsRef.current?.instance.option(
+            "dataSource",
+            ingredients || []
+          );
           showPopup();
         }}
       />
     );
-  };
-
-  const updateRecipe = (e: any) => {
-    const ingredientsData = ingredientsRef.current?.instance
-      .getDataSource()
-      .items();
-    const newRecipe = e.newData;
-    newRecipe.ingredients = ingredientsData;
   };
 
   const insertRecipe = (e: any) => {
@@ -53,25 +53,21 @@ const Recipes = () => {
     newRecipe.ingredients = ingredientsData;
   };
 
-  const savedIngredientWithoutUpdate = () => {
-    const ingredientsData = ingredientsRef.current?.instance
-      .getDataSource()
-      .items();
-    const rowKey = dataGrid.current?.instance.option("editing.editRowKey");
-    let rowData = dataGrid.current?.instance
-      .getVisibleRows()
-      .find((row) => row.key === rowKey)?.data;
-    if (rowData && !(rowKey as string).startsWith("_DX_KEY_")) {
-      const updatedData = { ...rowData, ingredients: ingredientsData };
-      const { __typename, ...newUpdatedData } = updatedData;
-      rowData = newUpdatedData;
-      console.log(rowData);
-      store.update(rowData.id, rowData);
-    }
+  const updateIngredientsByRecipe = async (id: any, recipe: Recipe) => {
+    await client
+      .mutate({
+        mutation: UPDATE_INGREDIENTS_BY_RECIPE,
+        variables: { id: id, ingredients: recipe.ingredients },
+        refetchQueries: [{ query: GET_RECIPES }],
+        onQueryUpdated: (observableQuery) => {
+          return observableQuery.refetch();
+        },
+      })
+      .then((res) => res.data.updateIngredientsByRecipe)
+      .catch((err) => console.log(err));
   };
 
   const ingredientsGrid = (cellInfo: any) => {
-    let ingredientList = [...cellInfo.data.ingredients];
     if (cellInfo.row.isNewRow) {
       return (
         <DataGrid
@@ -97,55 +93,6 @@ const Recipes = () => {
         </DataGrid>
       );
     }
-
-    return (
-      <DataGrid
-        ref={ingredientsRef}
-        dataSource={ingredientList}
-        loadPanel={{ enabled: true }}
-        key="id"
-        showBorders={true}
-        onSaving={(e) => {
-          if (e.changes.length > 0) {
-            const newDatas = [...ingredientList];
-            e.changes.forEach((change) => {
-              if (change.type === "update") {
-                e.cancel = true;
-                const index = ingredientList.findIndex(
-                  (item) => item.id === change.key.id
-                );
-                if (index !== -1) {
-                  const { __typename, name, ...newData } = change.key;
-                  ingredientList[index] = {
-                    ...newData,
-                    quantity: change.data.quantity,
-                  };
-                }
-              }
-            });
-            ingredientsRef.current?.instance.option("dataSource", [
-              ...ingredientList,
-            ]);
-            console.log(ingredientList);
-          }
-        }}
-      >
-        <Column
-          dataField="id"
-          caption="Tên nguyên liệu"
-          editorOptions={{
-            placeholder: "Chọn nguyên liệu",
-          }}
-          lookup={{
-            dataSource: ingredientStore,
-            displayExpr: "name",
-            valueExpr: "id",
-          }}
-        />
-        <Column dataField="quantity" caption="Số lượng" dataType="number" />
-        <Editing allowAdding allowDeleting allowUpdating mode="batch" />
-      </DataGrid>
-    );
   };
 
   return (
@@ -157,8 +104,6 @@ const Recipes = () => {
         ref={dataGrid}
         noDataText="Chưa có dữ liệu"
         onRowInserting={insertRecipe}
-        onRowUpdating={updateRecipe}
-        // onSaving={savedIngredientWithoutUpdate}
       >
         <Column
           dataField="STT"
@@ -172,7 +117,7 @@ const Recipes = () => {
           dataField="ingredients"
           caption="Nguyên liệu"
           cellRender={renderButton}
-          // editCellRender={ingredientsGrid}
+          editCellRender={ingredientsGrid}
         />
         <Editing
           allowAdding={true}
@@ -187,11 +132,7 @@ const Recipes = () => {
             title: "Công thức",
           }}
           form={{
-            items: [
-              { dataField: "name" },
-              { dataField: "description" },
-              // { dataField: "ingredients", colSpan: 2 },
-            ],
+            items: [{ dataField: "name" }, { dataField: "description" }],
           }}
         ></Editing>
         <SpeedDialAction icon="add" label="Thêm mới" onClick={addRow} />
@@ -205,14 +146,84 @@ const Recipes = () => {
         showCloseButton={true}
       >
         <DataGrid
-          dataSource={selectedData}
+          ref={ingredientsRef}
           keyExpr="id"
           showBorders={true}
-          onSaving={savedIngredientWithoutUpdate}
+          onSaving={async (e) => {
+            if (e.changes.length > 0) {
+              const newDatas = [] as IngredientQuantity[];
+              const ingredients = ingredientsRef.current?.instance
+                .getDataSource()
+                .items() as IngredientQuantity[] | any;
+              e.changes.forEach((change) => {
+                if (change.type === "update") {
+                  const index = ingredients.findIndex(
+                    (item: IngredientQuantity) => item.id === change.key
+                  );
+                  if (index !== -1) {
+                    const { __typename, name, ...updateIngredient } =
+                      ingredients[index];
+                    ingredients[index] = {
+                      ...updateIngredient,
+                      quantity: change.data.quantity,
+                    };
+                  }
+                } 
+                else if (change.type === "insert") {
+                  newDatas.push(change.data);
+                }
+              });
+
+              const mergeData = [...ingredients, ...newDatas];
+              console.log(mergeData)
+
+              ingredientsRef.current?.instance.option("dataSource", [
+                ...ingredients,
+                ...newDatas,
+              ]);
+            }
+
+            const newIngredients = ingredientsRef.current?.instance
+              .getDataSource()
+              .items() as IngredientQuantity[];
+
+            newIngredients.forEach((item : any, index) => {
+              const {__typename, name, ...newItem} = item;
+              newIngredients[index] = newItem;
+            })
+
+            console.log(newIngredients)
+
+            const { __typename, ...filterRecipe } = editRecipe;
+            const updatedRecipe = {
+              ...filterRecipe,
+              ingredients: [...newIngredients],
+            };
+            await updateIngredientsByRecipe(updatedRecipe.id, updatedRecipe);
+          }}
         >
-          <Column dataField="name" caption="Tên nguyên liệu" />
-          <Column dataField="quantity" caption="Số lượng" dataType="number" />
-          <Editing allowAdding allowDeleting allowUpdating />
+          <Column
+            dataField="id"
+            caption="Tên nguyên liệu"
+            editorOptions={{
+              placeholder: "Chọn nguyên liệu",
+            }}
+            lookup={{
+              dataSource: ingredientStore,
+              displayExpr: "name",
+              valueExpr: "id",
+            }}
+            validationRules={[
+              { type: "required", message: "Chọn nguyên liệu" },
+            ]}
+          />
+          <Column
+            dataField="quantity"
+            caption="Số lượng"
+            dataType="number"
+            validationRules={[{ type: "required", message: "Chọn số lượng" }]}
+          />
+          <Editing mode="batch" allowAdding allowDeleting allowUpdating />
         </DataGrid>
       </Popup>
     </DefaultLayout>

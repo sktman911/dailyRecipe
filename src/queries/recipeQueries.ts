@@ -21,7 +21,7 @@ export const ADD_RECIPE = gql`
         id
         name
         description
-        ingredients{
+        ingredients{         
           name
           quantity
         }
@@ -48,7 +48,19 @@ export const UPDATE_RECIPE = gql`
   }
 `
 
-// export const UPDATE_INGREDIENTS = 
+export const UPDATE_INGREDIENTS_BY_RECIPE = gql`
+  mutation UpdateIngredientsByRecipe($id:ID!, $ingredients: [IngredientInput!]){
+    updateIngredientsByRecipe(id: $id, ingredients: $ingredients){
+        id
+        name
+        description
+        ingredients{
+          id
+          quantity
+        }
+    }
+  }
+`
 
 
 

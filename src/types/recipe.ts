@@ -9,7 +9,7 @@ export interface Recipe {
 }
 
 export interface IngredientQuantity{
-    id?: string,
+    id: string,
     quantity: number;
 }
 

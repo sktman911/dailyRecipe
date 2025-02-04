@@ -17,7 +17,7 @@ export const Recipe = gql`
     }
 
     input IngredientInput {
-        id: String!
+        id: ID!
         quantity: Float!
     }
 
@@ -32,7 +32,6 @@ export const Recipe = gql`
         id: ID!
         name: String
         description: String
-        ingredients: [IngredientInput]
     }
 
     type Query{
@@ -43,5 +42,6 @@ export const Recipe = gql`
         addRecipe(recipe: RecipePostDTO!) : Recipe!
         updateRecipe(id: ID!, recipe: RecipePutDTO!) : Recipe!
         removeRecipe(id: ID!): Recipe!
+        updateIngredientsByRecipe(id: ID!, ingredients: [IngredientInput!]) : Recipe!
     }
 `;
