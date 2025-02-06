@@ -1,6 +1,7 @@
 import { db } from "@/src/firebase/firebase";
 import { Ingredient } from "@/src/types/ingredient";
 import { IngredientQuantity, Recipe } from "@/src/types/recipe";
+import { ResponseResult } from "@/src/types/responseResult";
 
 export const recipeResolver = {
   Query: {
@@ -42,6 +43,7 @@ export const recipeResolver = {
             name: recipeData.name,
             description: recipeData.description,
             createdDate: recipeData.createdDate,
+            instruction: recipeData.instruction,
             ingredients,
           } as Recipe;
         } else {
@@ -50,6 +52,7 @@ export const recipeResolver = {
             name: recipeData.name,
             description: recipeData.description,
             createdDate: recipeData.createdDate,
+            instruction: recipeData.instruction,
           } as Recipe;
         }
       });
@@ -60,25 +63,49 @@ export const recipeResolver = {
     addRecipe: async (
       _: unknown,
       { recipe }: { recipe: Recipe }
-    ): Promise<Recipe> => {
-      recipe.createdDate = new Date().toISOString();
+    ): Promise<ResponseResult<Recipe | null>> => {
+      try{
+        recipe.createdDate = new Date().toISOString();
       const docRef = await db.collection("recipes").add(recipe);
       const snapshot = await docRef.get();
-      return { id: snapshot.id, ...snapshot.data() } as Recipe;
+      return {
+        status: 200,
+        success: true,
+        message: "Công thức đã được thêm vào hệ thống.",
+        data: { id: snapshot.id, name: snapshot.data()?.name } as Recipe,
+      };
+      }catch(err) {
+        return {
+          status: 400,
+          success: false,
+          message: "Lỗi hệ thống.",
+          data: null,
+        };
+      }
     },
     updateRecipe: async (
       _: unknown,
       { id, recipe }: { id: string; recipe: Recipe }
-    ): Promise<Recipe> => {
+    ): Promise<ResponseResult<Recipe | null>> => {
       const recipeRef = await db.collection("recipes").doc(id);
       const docRef = await recipeRef.get();
       if (!docRef.exists) {
-        throw new Error("Recipe not found");
+        return {
+          success: false,
+          status: 400,
+          data: null,
+          message: "Công thức không tồn tại trong hệ thống",
+        };
       }
 
       await recipeRef.update({ ...docRef.data(), ...recipe });
       const updatedDoc = await recipeRef.get();
-      return { id: updatedDoc.id, ...updatedDoc.data() } as Recipe;
+      return {
+        success: true,
+        status: 200,
+        message: "Sửa thông tin thành công.",
+        data: { id: updatedDoc.id, name: updatedDoc.data()?.name} as Recipe,
+      };
     },
     removeRecipe: async (
       _: unknown,
@@ -91,10 +118,11 @@ export const recipeResolver = {
 
       return recipe;
     },
-    updateIngredientsByRecipe: async (
+    handleIngredientsByRecipe: async (
       _: unknown,
       { id, ingredients }: { id: string; ingredients: IngredientQuantity[] }
     ) => {
+      
       const recipeRef = await db.collection("recipes").doc(id);
       const docRef = await recipeRef.get();
       if (!docRef.exists) {
@@ -115,7 +143,9 @@ export const recipeResolver = {
         }
       });
 
-      const updatedIngredients = Array.from(ingredientMap.values());
+      // remove
+      const updatedIngredients = Array.from(ingredientMap.values())
+    .filter((item:any) => ingredients.some(newItem => newItem.id === item.id));
 
       await recipeRef.update({ ingredients: updatedIngredients });
 

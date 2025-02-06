@@ -6,6 +6,7 @@ export const GET_RECIPES = gql`
       id
       name
       description
+      instruction
       ingredients{
         id
         name
@@ -18,13 +19,10 @@ export const GET_RECIPES = gql`
 export const ADD_RECIPE = gql`
   mutation AddRecipe($recipe: RecipePostDTO!){
     addRecipe(recipe: $recipe){
-        id
-        name
-        description
-        ingredients{         
-          name
-          quantity
-        }
+      success
+      message
+      status
+      data
     }
   }
 `
@@ -41,16 +39,17 @@ export const REMOVE_RECIPE = gql`
 export const UPDATE_RECIPE = gql`
   mutation UpdateRecipe($id:ID!,$recipe: RecipePutDTO!){
     updateRecipe(id: $id, recipe: $recipe){
-        id
-        name
-        description
+      success
+      message
+      status
+      data
     }
   }
 `
 
-export const UPDATE_INGREDIENTS_BY_RECIPE = gql`
-  mutation UpdateIngredientsByRecipe($id:ID!, $ingredients: [IngredientInput!]){
-    updateIngredientsByRecipe(id: $id, ingredients: $ingredients){
+export const HANDLE_INGREDIENTS_BY_RECIPE = gql`
+  mutation HandleIngredientsByRecipe($id:ID!, $ingredients: [IngredientInput!]){
+    handleIngredientsByRecipe(id: $id, ingredients: $ingredients){
         id
         name
         description

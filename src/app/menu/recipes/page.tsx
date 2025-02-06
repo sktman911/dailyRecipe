@@ -10,23 +10,29 @@ import { ingredientStore } from "@/src/stores/ingredientStore";
 import { useCallback, useRef, useState } from "react";
 import { Recipe, IngredientQuantity } from "@/src/types/recipe";
 import client from "@/src/schema/client";
+import { HtmlEditor } from "devextreme-react/html-editor";
 import {
   GET_RECIPES,
-  UPDATE_INGREDIENTS_BY_RECIPE,
+  HANDLE_INGREDIENTS_BY_RECIPE,
 } from "@/src/queries/recipeQueries";
+import { SavingEvent } from "devextreme/ui/data_grid";
 
 const Recipes = () => {
   const [editRecipe, setEditRecipe] = useState<Recipe | any>(null);
   const dataGrid = useRef<DataGrid>(null);
   const ingredientsRef = useRef<DataGrid>(null);
   const popupRef = useRef<Popup>(null);
+  const instructionViewRef = useRef<Popup>(null);
 
   const showPopup = () => popupRef.current?.instance.show();
+
+  const showInstructionView =  () => instructionViewRef.current?.instance.show();
 
   const addRow = useCallback(() => {
     dataGrid.current?.instance.addRow();
   }, [dataGrid]);
 
+  // Render ingredients button
   const renderButton = (e: { data: Recipe }) => {
     return (
       <Button
@@ -45,54 +51,87 @@ const Recipes = () => {
     );
   };
 
-  const insertRecipe = (e: any) => {
-    const ingredientsData = ingredientsRef.current?.instance
-      .getDataSource()
-      .items();
-    const newRecipe = e.data;
-    newRecipe.ingredients = ingredientsData;
-  };
+  const renderInstructionView = (e : any) => {
+    return (
+      <Button
+        className="my-2"
+        text="Xem hướng dẫn"
+        onClick={() => {
+          tranformTextToHtml(e.value)
+          showInstructionView();
+        }}
+      />
+    );
+  }
 
-  const updateIngredientsByRecipe = async (id: any, recipe: Recipe) => {
+  const tranformTextToHtml = (e : any) =>{
+    
+  }
+
+  // Handle CRUD ingredients list
+  const handleIngredientsByRecipe = async (id: any, recipe: Recipe) => {
     await client
       .mutate({
-        mutation: UPDATE_INGREDIENTS_BY_RECIPE,
+        mutation: HANDLE_INGREDIENTS_BY_RECIPE,
         variables: { id: id, ingredients: recipe.ingredients },
         refetchQueries: [{ query: GET_RECIPES }],
         onQueryUpdated: (observableQuery) => {
           return observableQuery.refetch();
         },
       })
-      .then((res) => res.data.updateIngredientsByRecipe)
+      .then((res) => res.data.handleIngredientsByRecipe)
       .catch((err) => console.log(err));
   };
 
-  const ingredientsGrid = (cellInfo: any) => {
-    if (cellInfo.row.isNewRow) {
-      return (
-        <DataGrid
-          ref={ingredientsRef}
-          dataSource={[]}
-          key="id"
-          showBorders={true}
-        >
-          <Column
-            dataField="id"
-            caption="Tên nguyên liệu"
-            editorOptions={{
-              placeholder: "Chọn nguyên liệu",
-            }}
-            lookup={{
-              dataSource: ingredientStore,
-              displayExpr: "name",
-              valueExpr: "id",
-            }}
-          />
-          <Column dataField="quantity" caption="Số lượng" dataType="number" />
-          <Editing allowAdding allowDeleting allowUpdating mode="batch" />
-        </DataGrid>
-      );
+  const handleBeforeSendRequest = async (e: SavingEvent) => {
+    if (e.changes.length > 0) {
+      const ingredients = ingredientsRef.current?.instance
+        .getDataSource()
+        .items() as IngredientQuantity[] | any;
+      e.changes.forEach((change) => {
+        if (change.type === "update") {
+          const index = ingredients.findIndex(
+            (item: IngredientQuantity) => item.id === change.key
+          );
+          if (index !== -1) {
+            const { __typename, name, ...updateIngredient } =
+              ingredients[index];
+            ingredients[index] = {
+              ...updateIngredient,
+              quantity: change.data.quantity,
+            };
+          }
+        } else if (change.type === "insert") {
+          ingredients.push(change.data);
+        } else if (change.type === "remove") {
+          const index = ingredients.findIndex(
+            (item: any) => item.id === change.key
+          );
+          if (index !== -1) {
+            ingredients.splice(index, 1);
+          }
+        }
+      });
+
+      ingredientsRef.current?.instance.option("dataSource", [...ingredients]);
     }
+
+    const newIngredients = ingredientsRef.current?.instance
+      .getDataSource()
+      .items() as IngredientQuantity[];
+
+    newIngredients.forEach((item: any, index) => {
+      const { __typename, name, ...newItem } = item;
+      newIngredients[index] = newItem;
+    });
+
+    const { __typename, ...filterRecipe } = editRecipe;
+    const updatedRecipe = {
+      ...filterRecipe,
+      ingredients: newIngredients,
+    };
+
+    return updatedRecipe;
   };
 
   return (
@@ -103,7 +142,6 @@ const Recipes = () => {
         height={"auto"}
         ref={dataGrid}
         noDataText="Chưa có dữ liệu"
-        onRowInserting={insertRecipe}
       >
         <Column
           dataField="STT"
@@ -114,15 +152,46 @@ const Recipes = () => {
         <Column dataField={"name"} caption="Tên món" />
         <Column dataField={"description"} caption="Mô tả" />
         <Column
+          dataField={"instruction"}
+          caption="Hướng dẫn làm"
+          cellRender={renderInstructionView}
+          editCellRender={(data) => (
+            <HtmlEditor
+              defaultValue={data.value}
+              onValueChanged={(e) => {
+                if (data.setValue) {
+                  data.setValue(e.value);
+                }               
+              }}
+              height={200}
+              toolbar={{
+                items: [
+                  "bold",
+                  "italic",
+                  "underline",
+                  "strike",
+                  "alignLeft",
+                  "alignCenter",
+                  "alignRight",
+                  "alignJustify",
+                  "orderedList",
+                  "bulletList",
+                  "link",
+                  "image",
+                  "blockquote",
+                ],
+              }}
+            />
+          )}
+        />
+        <Column
           dataField="ingredients"
           caption="Nguyên liệu"
           cellRender={renderButton}
-          editCellRender={ingredientsGrid}
         />
         <Editing
-          allowAdding={true}
-          allowUpdating={true}
-          allowDeleting={true}
+          allowUpdating
+          allowDeleting
           mode="popup"
           useIcons={true}
           popup={{
@@ -132,12 +201,17 @@ const Recipes = () => {
             title: "Công thức",
           }}
           form={{
-            items: [{ dataField: "name" }, { dataField: "description" }],
+            items: [
+              { dataField: "name" },
+              { dataField: "description" },
+              { dataField: "instruction", colSpan: 2 },
+            ],
           }}
         ></Editing>
         <SpeedDialAction icon="add" label="Thêm mới" onClick={addRow} />
       </DataGrid>
 
+      {/* Ingredients CRUD popup  */}
       <Popup
         ref={popupRef}
         title="Nguyên liệu"
@@ -149,57 +223,22 @@ const Recipes = () => {
           ref={ingredientsRef}
           keyExpr="id"
           showBorders={true}
-          onSaving={async (e) => {
-            if (e.changes.length > 0) {
-              const newDatas = [] as IngredientQuantity[];
-              const ingredients = ingredientsRef.current?.instance
-                .getDataSource()
-                .items() as IngredientQuantity[] | any;
-              e.changes.forEach((change) => {
-                if (change.type === "update") {
-                  const index = ingredients.findIndex(
-                    (item: IngredientQuantity) => item.id === change.key
-                  );
-                  if (index !== -1) {
-                    const { __typename, name, ...updateIngredient } =
-                      ingredients[index];
-                    ingredients[index] = {
-                      ...updateIngredient,
-                      quantity: change.data.quantity,
-                    };
-                  }
-                } 
-                else if (change.type === "insert") {
-                  newDatas.push(change.data);
-                }
-              });
-
-              const mergeData = [...ingredients, ...newDatas];
-              console.log(mergeData)
-
-              ingredientsRef.current?.instance.option("dataSource", [
-                ...ingredients,
-                ...newDatas,
-              ]);
+          onEditorPreparing={(e) => {
+            if (e.dataField === "id" && e.parentType === "dataRow") {
+              if (e.row?.isNewRow) {
+                e.editorOptions.readOnly = false;
+              } else {
+                e.editorOptions.readOnly = true;
+              }
             }
-
-            const newIngredients = ingredientsRef.current?.instance
-              .getDataSource()
-              .items() as IngredientQuantity[];
-
-            newIngredients.forEach((item : any, index) => {
-              const {__typename, name, ...newItem} = item;
-              newIngredients[index] = newItem;
-            })
-
-            console.log(newIngredients)
-
-            const { __typename, ...filterRecipe } = editRecipe;
-            const updatedRecipe = {
-              ...filterRecipe,
-              ingredients: [...newIngredients],
-            };
-            await updateIngredientsByRecipe(updatedRecipe.id, updatedRecipe);
+          }}
+          onRowInserting={(e) => {
+            e.cancel = true;
+            ingredientsRef.current?.instance.cancelEditData();
+          }}
+          onSaving={async (e) => {
+            const updatedRecipe = await handleBeforeSendRequest(e);
+            await handleIngredientsByRecipe(updatedRecipe.id, updatedRecipe);
           }}
         >
           <Column
@@ -225,6 +264,19 @@ const Recipes = () => {
           />
           <Editing mode="batch" allowAdding allowDeleting allowUpdating />
         </DataGrid>
+      </Popup>
+
+      {/* Instruction View Popup  */}
+      <Popup
+        ref={instructionViewRef}
+        title="Hướng dẫn"
+        width={600}
+        height={400}
+        showCloseButton={true}
+        contentTemplate={(e) => {
+
+        }}
+      >
       </Popup>
     </DefaultLayout>
   );

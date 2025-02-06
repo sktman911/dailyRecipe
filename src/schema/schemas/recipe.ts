@@ -1,47 +1,59 @@
 import { gql } from "@apollo/client";
 
 export const Recipe = gql`
-    type Recipe{
-        id: ID!
-        name: String!
-        description: String
-        createdDate: String
-        createdBy: String
-        ingredients: [Ingredient]
-    }
+  type ResponseResult {
+    success: Boolean
+    message: String
+    status: Int
+    data: JSON
+  }
 
-    type Ingredient {
-        id: ID!
-        name: String!
-        quantity: Float!
-    }
+  scalar JSON
 
-    input IngredientInput {
-        id: ID!
-        quantity: Float!
-    }
+  type Recipe {
+    id: ID!
+    name: String!
+    description: String
+    createdDate: String
+    createdBy: String
+    instruction: String
+    ingredients: [Ingredient]
+  }
 
-    input RecipePostDTO{
-        name: String!
-        description: String
-        createdDate: String
-        ingredients: [IngredientInput]
-    }
+  type Ingredient {
+    id: ID!
+    name: String!
+    quantity: Float!
+  }
 
-    input RecipePutDTO{
-        id: ID!
-        name: String
-        description: String
-    }
+  input IngredientInput {
+    id: ID!
+    quantity: Float!
+  }
 
-    type Query{
-        recipes: [Recipe!]!
-    }
+  input RecipePostDTO {
+    name: String!
+    description: String
+    createdDate: String
+    instruction: String
+    ingredients: [IngredientInput]
+  }
 
-    type Mutation{
-        addRecipe(recipe: RecipePostDTO!) : Recipe!
-        updateRecipe(id: ID!, recipe: RecipePutDTO!) : Recipe!
-        removeRecipe(id: ID!): Recipe!
-        updateIngredientsByRecipe(id: ID!, ingredients: [IngredientInput!]) : Recipe!
-    }
+  input RecipePutDTO {
+    id: ID!
+    name: String
+    description: String
+    instruction: String
+  }
+
+  type Query {
+    recipes: [Recipe!]!
+  }
+
+  type Mutation {
+    addRecipe(recipe: RecipePostDTO!): ResponseResult!
+    updateRecipe(id: ID!, recipe: RecipePutDTO!): ResponseResult!
+    removeRecipe(id: ID!): ResponseResult!
+    handleIngredientsByRecipe(id: ID!, ingredients: [IngredientInput!]): Recipe!
+  }
 `;

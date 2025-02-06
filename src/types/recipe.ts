@@ -4,6 +4,7 @@ export interface Recipe {
     // createdBy: string;
     createdDate: string;
     description?: string;
+    instruction?: string;
     // category: number;
     ingredients: IngredientQuantity[];    
 }
