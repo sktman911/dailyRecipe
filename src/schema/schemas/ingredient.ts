@@ -1,15 +1,32 @@
 import { gql } from "@apollo/client";
 
 export const Ingredient = gql`
-
   type ResponseResult {
     success: Boolean
     message: String
     status: Int
     data: JSON
   }
-
   scalar JSON
+
+  input RequestParams {
+    skip: Int
+    take: Int
+    sort: [Sort]
+    filter: [Filter]
+    lastDocId: String
+  }
+
+  input Sort {
+    desc: Boolean
+    selector: String
+  }
+
+  input Filter {
+    field: String
+    operator: String
+    value: String
+  }
 
   type Ingredient {
     id: ID!
@@ -39,7 +56,7 @@ export const Ingredient = gql`
   }
 
   type Query {
-    ingredients: [Ingredient!]!
+    ingredients(requestParams: RequestParams) : ResponseResult!
     checkIngredientName(name: String): ResponseResult!
   }
 

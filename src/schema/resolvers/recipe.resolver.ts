@@ -110,13 +110,27 @@ export const recipeResolver = {
     removeRecipe: async (
       _: unknown,
       { id }: { id: string }
-    ): Promise<Recipe> => {
+    ): Promise<ResponseResult<Recipe | null>> => {
       const recipeRef = await db.collection("recipes").doc(id);
       const docRef = await recipeRef.get();
+      if (!docRef.exists) {
+        return {
+          success: false,
+          status: 400,
+          data: null,
+          message: "Công thức không tồn tại trong hệ thống",
+        };
+      }
+
       const recipe = { id: docRef.id, ...docRef.data() } as Recipe;
       await recipeRef.delete();
 
-      return recipe;
+      return {
+        success: true,
+        status: 200,
+        message: "Đã xóa công thức khỏi hệ thống",
+        data: recipe,
+      };
     },
     handleIngredientsByRecipe: async (
       _: unknown,

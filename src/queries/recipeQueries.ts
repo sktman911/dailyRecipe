@@ -30,8 +30,10 @@ export const ADD_RECIPE = gql`
 export const REMOVE_RECIPE = gql`
   mutation RemoveRecipe($id: ID!){
     removeRecipe(id: $id){
-        id
-        name
+      success
+      message
+      status
+      data
     }
   }
 `

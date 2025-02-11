@@ -1,19 +1,15 @@
 import { gql } from "@apollo/client";
 
 export const GET_INGREDIENTS = gql`
-  query GetIngredients {
-    ingredients {
-      id
-      name
-      description
-      image
-      imagePublicId
+  query GetIngredients($requestParams: RequestParams!) {
+    ingredients(requestParams: $requestParams) {
+      data
     }
   }
 `;
 
 export const CHECK_INGREDIENTNAME = gql`
-  query CheckIngredientName($name : String) {
+  query CheckIngredientName($name: String) {
     checkIngredientName(name: $name) {
       success
       message

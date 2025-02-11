@@ -89,18 +89,34 @@ export const store = new CustomStore({
     }
   },
   remove: async (key) => {
-    return await client
-      .mutate({
+    try {
+      const res = await client.mutate({
         mutation: REMOVE_RECIPE,
         variables: { id: key },
         refetchQueries: [{ query: GET_RECIPES }],
         onQueryUpdated: (observableQuery) => {
           return observableQuery.refetch();
         },
-      })
-      .then((res) => {
-        return res.data.removeRecipe;
-      })
-      .catch((err) => console.log(err));
+      });
+      if (res.data.removeRecipe.success === false) {
+        Swal.fire({
+          title: "Lỗi",
+          text: res.data.removeRecipe.message,
+          icon: "error",
+        });
+      } else {
+        Swal.fire({
+          title: "Thành công",
+          text: res.data.removeRecipe.message,
+          icon: "success",
+        });
+      }
+    } catch (err) {
+      Swal.fire({
+        title: "Lỗi",
+        text: "Lỗi hệ thống. Vui lòng kiểm tra lại.",
+        icon: "error",
+      });
+    }
   },
 });

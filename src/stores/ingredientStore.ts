@@ -15,14 +15,29 @@ export const ingredientStore = new CustomStore({
   byKey: async (key) => {
     return cachedIngredients.find((i) => i.id === key) || null;
   },
-  load: async () => {
+  load: async (loadOptions) => {
+    
     return await client
       .query({
         query: GET_INGREDIENTS,
+        variables: {
+          requestParams: {
+            skip: loadOptions.skip,
+            take: loadOptions.take,
+            sort: loadOptions.sort,
+            filter: loadOptions.filter,
+            lastDocId: cachedIngredients.length > 0 ? cachedIngredients[cachedIngredients.length-1].id : null
+          },
+        },
       })
-      .then((res) => {
-        cachedIngredients = res.data.ingredients;
-        return res.data.ingredients;
+      .then((res) => {        
+        const {totalCount, ...dataObj} = res.data.ingredients.data;
+        const data= Object.values(dataObj);
+        cachedIngredients = data;
+        return {
+          data,
+          totalCount
+        };
       })
       .catch((err) => {
         console.log(err);
@@ -53,7 +68,7 @@ export const ingredientStore = new CustomStore({
         });
       }
       return res;
-    } catch (error : any) {
+    } catch (error: any) {
       Swal.fire({
         title: "Lỗi",
         text: "Lỗi hệ thống. Vui lòng kiểm tra lại.",
@@ -63,9 +78,8 @@ export const ingredientStore = new CustomStore({
   },
   update: async (key, values) => {
     const ingredient = { id: key, ...values };
-    try{
-      const res = await client
-      .mutate({
+    try {
+      const res = await client.mutate({
         mutation: UPDATE_INGREDIENT,
         variables: { id: key, ingredient: ingredient },
         refetchQueries: [{ query: GET_INGREDIENTS }],
@@ -86,7 +100,7 @@ export const ingredientStore = new CustomStore({
           icon: "success",
         });
       }
-    }catch(err : any){
+    } catch (err: any) {
       Swal.fire({
         title: "Lỗi",
         text: "Lỗi hệ thống. Vui lòng kiểm tra lại.",
@@ -95,16 +109,15 @@ export const ingredientStore = new CustomStore({
     }
   },
   remove: async (key) => {
-    try{
-      const res = await client
-      .mutate({
+    try {
+      const res = await client.mutate({
         mutation: REMOVE_INGREDIENT,
         variables: { id: key },
         refetchQueries: [{ query: GET_INGREDIENTS }],
         onQueryUpdated: (observableQuery) => {
           return observableQuery.refetch();
         },
-      })
+      });
       if (res.data.removeIngredient.success === false) {
         Swal.fire({
           title: "Lỗi",
@@ -118,8 +131,7 @@ export const ingredientStore = new CustomStore({
           icon: "success",
         });
       }
-    }
-    catch(err){
+    } catch (err) {
       Swal.fire({
         title: "Lỗi",
         text: "Lỗi hệ thống. Vui lòng kiểm tra lại.",

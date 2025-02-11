@@ -19,6 +19,7 @@ import { SavingEvent } from "devextreme/ui/data_grid";
 
 const Recipes = () => {
   const [editRecipe, setEditRecipe] = useState<Recipe | any>(null);
+  const [instruction, setInstruction] = useState<String | any>(null);
   const dataGrid = useRef<DataGrid>(null);
   const ingredientsRef = useRef<DataGrid>(null);
   const popupRef = useRef<Popup>(null);
@@ -57,15 +58,15 @@ const Recipes = () => {
         className="my-2"
         text="Xem hướng dẫn"
         onClick={() => {
-          tranformTextToHtml(e.value)
+          setInstruction(e.value)
           showInstructionView();
         }}
       />
     );
   }
 
-  const tranformTextToHtml = (e : any) =>{
-    
+  const tranformTextToHtml = (text : string) =>{
+    return { __html: text }; 
   }
 
   // Handle CRUD ingredients list
@@ -274,7 +275,10 @@ const Recipes = () => {
         height={400}
         showCloseButton={true}
         contentTemplate={(e) => {
-
+          const content = document.createElement("div");
+          content.className = "prose";
+          content.innerHTML = instruction;
+          e.append(content);
         }}
       >
       </Popup>

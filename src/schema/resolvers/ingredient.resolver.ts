@@ -1,7 +1,9 @@
 import { db } from "@/src/firebase/firebase";
 import { Ingredient } from "@/src/types/ingredient";
+import { RequestParams } from "@/src/types/requestParams";
 import { ResponseResult } from "@/src/types/responseResult";
 import cloudinary from "cloudinary";
+import { TURBO_TRACE_DEFAULT_MEMORY_LIMIT } from "next/dist/shared/lib/constants";
 
 const isValidName = async (ingredientName: string): Promise<boolean> => {
   const snapshot = await db
@@ -13,12 +15,39 @@ const isValidName = async (ingredientName: string): Promise<boolean> => {
 
 export const ingredientResolver = {
   Query: {
-    ingredients: async (): Promise<Ingredient[]> => {
-      const snapshot = await db.collection("ingredients").get();
-      return snapshot.docs.map((doc: any) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Ingredient[];
+    ingredients: async (
+      _: any,
+      { requestParams }: { requestParams: RequestParams }
+    ) => {
+      let query = await db
+        .collection("ingredients")       
+        .orderBy("createdDate","desc")       
+        .limit(requestParams.take);
+      let tempQuery = query;
+
+      if (requestParams.lastDocId) {
+        const lastDoc = await db
+          .collection("ingredients")
+          .doc(requestParams.lastDocId)
+          .get();
+        if (lastDoc.exists) {
+          query = query.startAfter(lastDoc);
+        }
+      }
+
+      const snapshot = await query.get();
+      if(snapshot.empty) snapshot
+
+      const totalSnapshot = (await db.collection("ingredients").get()).size;
+      return {
+        data: {
+          ...(snapshot.docs.map((doc: any) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as Ingredient[]),
+          totalCount: totalSnapshot,
+        },
+      };
     },
 
     checkIngredientName: async (
