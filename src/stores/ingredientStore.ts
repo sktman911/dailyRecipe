@@ -12,11 +12,11 @@ let cachedIngredients: any[] = [];
 
 export const ingredientStore = new CustomStore({
   key: "id",
-  byKey: async (key) => {
-    return cachedIngredients.find((i) => i.id === key) || null;
-  },
+  // byKey: async (key) => {
+  //   return cachedIngredients.find((i) => i.id === key) || null;
+  // },
   load: async (loadOptions) => {
-    
+    console.log(loadOptions)
     return await client
       .query({
         query: GET_INGREDIENTS,

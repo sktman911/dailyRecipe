@@ -1,12 +1,17 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
-import DataGrid, { Column, Editing } from "devextreme-react/data-grid";
+import DataGrid, {
+  Column,
+  Editing,
+  Pager,
+  Paging,
+} from "devextreme-react/data-grid";
 import LoadPanel from "devextreme-react/load-panel";
 import { SpeedDialAction } from "devextreme-react/speed-dial-action";
 import FileUploader from "devextreme-react/file-uploader";
 import DefaultLayout from "@/src/components/Layouts/DefaultLayout";
 import { ingredientStore } from "@/src/stores/ingredientStore";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
 import useImageUpload from "@/src/hooks/useImageUpload";
 import React from "react";
 import defaultImg from "@/src/assets/images/defaultImage.png";
@@ -14,7 +19,6 @@ import client from "@/src/schema/client";
 import { CHECK_INGREDIENTNAME } from "@/src/queries/ingredientQueries";
 
 const Ingredients = () => {
-  const [pageSize, setPageSize] = useState(5);
   const dataGrid = useRef<DataGrid>(null);
   const fileUploaderRef = useRef<FileUploader>(null);
   const loadPanel = useRef<LoadPanel>(null);
@@ -108,31 +112,16 @@ const Ingredients = () => {
         noDataText="Chưa có dữ liệu"
         ref={dataGrid}
         onRowInserting={async (e) => await insertData(e)}
-        onOptionChanged={(e) => {
-          if (e.fullName === "paging.pageSize") {
-            dataGrid.current?.instance.refresh();
-        }
-        }}
-        pager={{
-          visible: true,
-          showPageSizeSelector: true,
-          showNavigationButtons: true,
-          showInfo: true,
-          allowedPageSizes: [5, 10, 15],
-        }}
-        paging={{         
-          pageSize: 5,
-        }}
-      >     
+      >
         <Column
           dataField="STT"
           caption="STT"
           width={100}
           cellRender={(cellInfo) => {
-            const pageIndex = cellInfo.component.pageIndex(); 
-            const pageSize = cellInfo.component.pageSize(); 
-            const rowIndex = cellInfo.rowIndex + 1; 
-            return <span>{pageIndex * pageSize + rowIndex}</span>; 
+            const pageIndex = cellInfo.component.pageIndex();
+            const pageSize = cellInfo.component.pageSize();
+            const rowIndex = cellInfo.rowIndex + 1;
+            return <span>{pageIndex * pageSize + rowIndex}</span>;
           }}
         />
         <Column
@@ -193,6 +182,14 @@ const Ingredients = () => {
           )}
         />
         <Column dataField="description" caption="Mô tả" />
+        <Paging defaultPageSize={1} />
+        <Pager
+          visible={true}
+          showPageSizeSelector={true}
+          showNavigationButtons={true}
+          showInfo={true}
+          allowedPageSizes={[1,10,15]}
+        />
         <Editing
           allowUpdating={true}
           allowDeleting={true}

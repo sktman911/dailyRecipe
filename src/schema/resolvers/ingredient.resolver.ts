@@ -3,7 +3,6 @@ import { Ingredient } from "@/src/types/ingredient";
 import { RequestParams } from "@/src/types/requestParams";
 import { ResponseResult } from "@/src/types/responseResult";
 import cloudinary from "cloudinary";
-import { TURBO_TRACE_DEFAULT_MEMORY_LIMIT } from "next/dist/shared/lib/constants";
 
 const isValidName = async (ingredientName: string): Promise<boolean> => {
   const snapshot = await db
@@ -23,6 +22,7 @@ export const ingredientResolver = {
         .collection("ingredients")       
         .orderBy("createdDate","desc")       
         .limit(requestParams.take);
+
       let tempQuery = query;
 
       if (requestParams.lastDocId) {
@@ -35,8 +35,10 @@ export const ingredientResolver = {
         }
       }
 
-      const snapshot = await query.get();
-      if(snapshot.empty) snapshot
+      let snapshot = await query.get();
+      if(snapshot.empty) snapshot = await tempQuery.get();
+
+      console.log(snapshot)
 
       const totalSnapshot = (await db.collection("ingredients").get()).size;
       return {
