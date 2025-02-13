@@ -6,12 +6,12 @@ export interface RequestParams {
     lastDocId?: string
 }
 
-interface Sort{
+export interface Sort{
     desc: boolean,
     selector: string,
 }
 
-interface Filter{
+export interface Filter{
     field: string,
     operator: string,
     value: string

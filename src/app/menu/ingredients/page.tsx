@@ -110,6 +110,9 @@ const Ingredients = () => {
         showBorders={true}
         height={"auto"}
         noDataText="Chưa có dữ liệu"
+        filterRow={{visible: true}}
+        wordWrapEnabled={true}
+        headerFilter={{visible: true}}
         ref={dataGrid}
         onRowInserting={async (e) => await insertData(e)}
       >
@@ -182,13 +185,13 @@ const Ingredients = () => {
           )}
         />
         <Column dataField="description" caption="Mô tả" />
-        <Paging defaultPageSize={1} />
+        <Paging defaultPageSize={5} />
         <Pager
           visible={true}
           showPageSizeSelector={true}
           showNavigationButtons={true}
           showInfo={true}
-          allowedPageSizes={[1,10,15]}
+          allowedPageSizes={[5,10,15]}
         />
         <Editing
           allowUpdating={true}

@@ -1,6 +1,6 @@
 import { db } from "@/src/firebase/firebase";
 import { Ingredient } from "@/src/types/ingredient";
-import { RequestParams } from "@/src/types/requestParams";
+import { RequestParams, Sort } from "@/src/types/requestParams";
 import { ResponseResult } from "@/src/types/responseResult";
 import cloudinary from "cloudinary";
 
@@ -18,12 +18,20 @@ export const ingredientResolver = {
       _: any,
       { requestParams }: { requestParams: RequestParams }
     ) => {
-      let query = await db
-        .collection("ingredients")       
-        .orderBy("createdDate","desc")       
-        .limit(requestParams.take);
+      let query = db.collection("ingredients").orderBy("createdDate", "desc");
+      
+      const sorts = requestParams.sort as Sort[];
+      if (sorts?.length > 0) {
+        sorts.forEach((condition) => {
+          query = query.orderBy(
+            condition.selector,
+            condition.desc ? "desc" : "asc"
+          );
+        });
+      }
 
-      let tempQuery = query;
+      console.log()
+      query = query.limit(requestParams.take);
 
       if (requestParams.lastDocId) {
         const lastDoc = await db
@@ -36,9 +44,6 @@ export const ingredientResolver = {
       }
 
       let snapshot = await query.get();
-      if(snapshot.empty) snapshot = await tempQuery.get();
-
-      console.log(snapshot)
 
       const totalSnapshot = (await db.collection("ingredients").get()).size;
       return {
