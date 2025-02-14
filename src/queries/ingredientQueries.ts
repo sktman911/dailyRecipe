@@ -24,13 +24,7 @@ export const ADD_INGREDIENT = gql`
       success
       message
       status
-      data {
-        id
-        name
-        description
-        image
-        imagePublicId
-      }
+      data
     }
   }
 `;
@@ -41,10 +35,7 @@ export const REMOVE_INGREDIENT = gql`
       success
       message
       status
-      data {
-        id
-        name
-      }
+      data
     }
   }
 `;
@@ -55,13 +46,7 @@ export const UPDATE_INGREDIENT = gql`
       success
       message
       status
-      data {
-        id
-        name
-        description
-        image
-        imagePublicId
-      }
+      data
     }
   }
 `;

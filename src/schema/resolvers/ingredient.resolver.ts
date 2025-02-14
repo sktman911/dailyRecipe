@@ -18,8 +18,8 @@ export const ingredientResolver = {
       _: any,
       { requestParams }: { requestParams: RequestParams }
     ) => {
-      let query = db.collection("ingredients").orderBy("createdDate", "desc");
-      
+      let query : FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = await db.collection("ingredients");
+
       const sorts = requestParams.sort as Sort[];
       if (sorts?.length > 0) {
         sorts.forEach((condition) => {
@@ -28,22 +28,23 @@ export const ingredientResolver = {
             condition.desc ? "desc" : "asc"
           );
         });
+      }else{
+        query = query.orderBy("createdDate","desc");
       }
 
-      console.log()
-      query = query.limit(requestParams.take);
+      // if (requestParams.lastDocId) {
+      //   const lastDoc = await db
+      //     .collection("ingredients")
+      //     .doc(requestParams.lastDocId)
+      //     .get();
+      //   if (lastDoc.exists) {
+      //     query = query.startAfter(lastDoc);
+      //   }
+      // }
 
-      if (requestParams.lastDocId) {
-        const lastDoc = await db
-          .collection("ingredients")
-          .doc(requestParams.lastDocId)
-          .get();
-        if (lastDoc.exists) {
-          query = query.startAfter(lastDoc);
-        }
-      }
+      query = query.offset(requestParams.skip).limit(requestParams.take);
 
-      let snapshot = await query.get();
+      const snapshot = await query.get();
 
       const totalSnapshot = (await db.collection("ingredients").get()).size;
       return {

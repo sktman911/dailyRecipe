@@ -7,36 +7,41 @@ import {
   UPDATE_INGREDIENT,
 } from "../queries/ingredientQueries";
 import Swal from "sweetalert2";
+import { LoadOptions } from "devextreme/data";
+import { parseFilterParams } from "../helpers/common";
 
 let cachedIngredients: any[] = [];
+let requestParams: LoadOptions<any>;
+
+const getRequestParams = (loadOptions: any) => ({
+  skip: loadOptions.skip,
+  take: loadOptions.take,
+  sort: loadOptions.sort,
+  filter: loadOptions.filter,
+});
 
 export const ingredientStore = new CustomStore({
   key: "id",
   // byKey: async (key) => {
   //   return cachedIngredients.find((i) => i.id === key) || null;
   // },
-  load: async (loadOptions) => {
-    console.log(loadOptions)
+  load: async (loadOptions) => {    
+    requestParams = getRequestParams(loadOptions);
+    const filter= parseFilterParams(loadOptions.filter);
     return await client
       .query({
         query: GET_INGREDIENTS,
         variables: {
-          requestParams: {
-            skip: loadOptions.skip,
-            take: loadOptions.take,
-            sort: loadOptions.sort,
-            filter: loadOptions.filter,
-            lastDocId: cachedIngredients.length > 0 ? cachedIngredients[cachedIngredients.length-1].id : null
-          },
+          requestParams,
         },
       })
-      .then((res) => {        
-        const {totalCount, ...dataObj} = res.data.ingredients.data;
-        const data= Object.values(dataObj);
+      .then((res) => {
+        const { totalCount, ...dataObj } = res.data.ingredients.data;
+        const data = Object.values(dataObj);
         cachedIngredients = data;
         return {
           data,
-          totalCount
+          totalCount,
         };
       })
       .catch((err) => {
@@ -49,7 +54,9 @@ export const ingredientStore = new CustomStore({
       const res = await client.mutate({
         mutation: ADD_INGREDIENT,
         variables: { ingredient: values },
-        refetchQueries: [{ query: GET_INGREDIENTS }],
+        refetchQueries: [
+          { query: GET_INGREDIENTS, variables: { requestParams } },
+        ],
         onQueryUpdated: (observableQuery) => {
           return observableQuery.refetch();
         },
@@ -82,7 +89,9 @@ export const ingredientStore = new CustomStore({
       const res = await client.mutate({
         mutation: UPDATE_INGREDIENT,
         variables: { id: key, ingredient: ingredient },
-        refetchQueries: [{ query: GET_INGREDIENTS }],
+        refetchQueries: [
+          { query: GET_INGREDIENTS, variables: { requestParams } },
+        ],
         onQueryUpdated: (observableQuery) => {
           return observableQuery.refetch();
         },
@@ -113,7 +122,9 @@ export const ingredientStore = new CustomStore({
       const res = await client.mutate({
         mutation: REMOVE_INGREDIENT,
         variables: { id: key },
-        refetchQueries: [{ query: GET_INGREDIENTS }],
+        refetchQueries: [
+          { query: GET_INGREDIENTS, variables: { requestParams } },
+        ],
         onQueryUpdated: (observableQuery) => {
           return observableQuery.refetch();
         },

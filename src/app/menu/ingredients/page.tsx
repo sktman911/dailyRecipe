@@ -108,11 +108,11 @@ const Ingredients = () => {
         dataSource={ingredientStore}
         remoteOperations={{ paging: true, sorting: true, filtering: true }}
         showBorders={true}
-        height={"auto"}
+        height="fit"
         noDataText="Chưa có dữ liệu"
-        filterRow={{visible: true}}
+        filterRow={{ visible: true }}
         wordWrapEnabled={true}
-        headerFilter={{visible: true}}
+        headerFilter={{ visible: true }}
         ref={dataGrid}
         onRowInserting={async (e) => await insertData(e)}
       >
@@ -120,6 +120,8 @@ const Ingredients = () => {
           dataField="STT"
           caption="STT"
           width={100}
+          allowSorting={false}
+          allowHeaderFiltering={false}
           cellRender={(cellInfo) => {
             const pageIndex = cellInfo.component.pageIndex();
             const pageSize = cellInfo.component.pageSize();
@@ -132,19 +134,22 @@ const Ingredients = () => {
           caption="Tên nguyên liệu"
           validationRules={[
             { type: "required", message: "Vui lòng nhập tên nguyên liệu" },
-            {
-              type: "async",
-              message: "Tên nguyên liệu đã có trong hệ thống.",
-              validationCallback: async (e) => {
-                const res = await isExitedName(e.value);
-                return res;
-              },
-            },
+            // {
+            //   type: "async",
+            //   message: "Tên nguyên liệu đã có trong hệ thống.",
+            //   validationCallback: async (e) => {
+            //     const res = await isExitedName(e.value);
+            //     return res;
+            //   },
+            // },
           ]}
         />
         <Column
           dataField="image"
           caption="Hình ảnh"
+          allowSorting={false}
+          allowHeaderFiltering={false}
+          allowFiltering={false}
           cellRender={(data: any) => (
             <img
               src={data.value ? data.value : defaultImg.src}
@@ -184,14 +189,19 @@ const Ingredients = () => {
             </div>
           )}
         />
-        <Column dataField="description" caption="Mô tả" />
+        <Column
+          dataField="description"
+          allowHeaderFiltering={false}
+          allowSorting={false}
+          caption="Mô tả"
+        />
         <Paging defaultPageSize={5} />
         <Pager
           visible={true}
           showPageSizeSelector={true}
           showNavigationButtons={true}
           showInfo={true}
-          allowedPageSizes={[5,10,15]}
+          allowedPageSizes={[5, 10, 15]}
         />
         <Editing
           allowUpdating={true}
