@@ -13,6 +13,6 @@ export interface Sort{
 
 export interface Filter{
     field: string,
-    operator: string,
-    value: string
+    operator: string ,
+    value: object,     
 }

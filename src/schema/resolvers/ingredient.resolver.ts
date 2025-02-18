@@ -1,8 +1,21 @@
 import { db } from "@/src/firebase/firebase";
 import { Ingredient } from "@/src/types/ingredient";
-import { RequestParams, Sort } from "@/src/types/requestParams";
+import { Filter, RequestParams, Sort } from "@/src/types/requestParams";
 import { ResponseResult } from "@/src/types/responseResult";
 import cloudinary from "cloudinary";
+import Typesense from "typesense";
+
+const client = new Typesense.Client({
+  nodes: [
+    {
+      host: "localhost",
+      port: 8108,
+      protocol: "http",
+    },
+  ],
+  apiKey: '',
+  connectionTimeoutSeconds: 3,
+});
 
 const isValidName = async (ingredientName: string): Promise<boolean> => {
   const snapshot = await db
@@ -18,9 +31,17 @@ export const ingredientResolver = {
       _: any,
       { requestParams }: { requestParams: RequestParams }
     ) => {
-      let query : FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = await db.collection("ingredients");
-
+      let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> =
+        await db.collection("ingredients");
       const sorts = requestParams.sort as Sort[];
+      const filter = requestParams.filter as Filter[];
+
+      if (filter?.length > 0) {
+        filter.forEach((condition) => {
+          query = query.where(condition.field, "==", condition.value);
+        });
+      }
+
       if (sorts?.length > 0) {
         sorts.forEach((condition) => {
           query = query.orderBy(
@@ -28,19 +49,9 @@ export const ingredientResolver = {
             condition.desc ? "desc" : "asc"
           );
         });
-      }else{
-        query = query.orderBy("createdDate","desc");
+      } else {
+        query = query.orderBy("createdDate", "desc");
       }
-
-      // if (requestParams.lastDocId) {
-      //   const lastDoc = await db
-      //     .collection("ingredients")
-      //     .doc(requestParams.lastDocId)
-      //     .get();
-      //   if (lastDoc.exists) {
-      //     query = query.startAfter(lastDoc);
-      //   }
-      // }
 
       query = query.offset(requestParams.skip).limit(requestParams.take);
 

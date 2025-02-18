@@ -106,7 +106,7 @@ const Ingredients = () => {
     <DefaultLayout>
       <DataGrid
         dataSource={ingredientStore}
-        remoteOperations={{ paging: true, sorting: true, filtering: true }}
+        remoteOperations={{ paging: true, filtering: true, sorting: true}}
         showBorders={true}
         height="fit"
         noDataText="Chưa có dữ liệu"
@@ -132,16 +132,9 @@ const Ingredients = () => {
         <Column
           dataField="name"
           caption="Tên nguyên liệu"
+          filterOperations={["startswith"]}
           validationRules={[
             { type: "required", message: "Vui lòng nhập tên nguyên liệu" },
-            // {
-            //   type: "async",
-            //   message: "Tên nguyên liệu đã có trong hệ thống.",
-            //   validationCallback: async (e) => {
-            //     const res = await isExitedName(e.value);
-            //     return res;
-            //   },
-            // },
           ]}
         />
         <Column
@@ -193,7 +186,9 @@ const Ingredients = () => {
           dataField="description"
           allowHeaderFiltering={false}
           allowSorting={false}
+          dataType="string"
           caption="Mô tả"
+          filterOperations={["startswith"]}
         />
         <Paging defaultPageSize={5} />
         <Pager

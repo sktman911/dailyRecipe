@@ -29,7 +29,8 @@
     "react": "^19.0.0",
     "react-apexcharts": "^1.4.1",
     "react-dom": "^19.0.0",
-    "sweetalert2": "^11.15.10"
+    "sweetalert2": "^11.15.10",
+    "typesense": "^1.8.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

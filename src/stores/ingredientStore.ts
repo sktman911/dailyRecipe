@@ -17,7 +17,7 @@ const getRequestParams = (loadOptions: any) => ({
   skip: loadOptions.skip,
   take: loadOptions.take,
   sort: loadOptions.sort,
-  filter: loadOptions.filter,
+  filter: parseFilterParams(loadOptions.filter),
 });
 
 export const ingredientStore = new CustomStore({
@@ -27,13 +27,13 @@ export const ingredientStore = new CustomStore({
   // },
   load: async (loadOptions) => {    
     requestParams = getRequestParams(loadOptions);
-    const filter= parseFilterParams(loadOptions.filter);
     return await client
       .query({
         query: GET_INGREDIENTS,
         variables: {
-          requestParams,
+          requestParams,       
         },
+        
       })
       .then((res) => {
         const { totalCount, ...dataObj } = res.data.ingredients.data;
@@ -52,7 +52,7 @@ export const ingredientStore = new CustomStore({
   insert: async (values) => {
     try {
       const res = await client.mutate({
-        mutation: ADD_INGREDIENT,
+        mutation: ADD_INGREDIENT,       
         variables: { ingredient: values },
         refetchQueries: [
           { query: GET_INGREDIENTS, variables: { requestParams } },
