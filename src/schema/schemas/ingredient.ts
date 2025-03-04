@@ -57,7 +57,7 @@ export const Ingredient = gql`
 
   type Query {
     ingredients(requestParams: RequestParams) : ResponseResult!
-    checkIngredientName(name: String): ResponseResult!
+    allIngredients: Ingredient[]!
   }
 
   type Mutation {

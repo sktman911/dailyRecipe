@@ -8,12 +8,10 @@ export const GET_INGREDIENTS = gql`
   }
 `;
 
-export const CHECK_INGREDIENTNAME = gql`
-  query CheckIngredientName($name: String) {
-    checkIngredientName(name: $name) {
-      success
-      message
-      status
+export const GET_ALL_ACTIVE_INGREDIENTS = gql`
+  query GetAllActiveIngredients{
+    allIngredients{
+      data
     }
   }
 `;

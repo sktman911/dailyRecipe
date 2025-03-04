@@ -16,7 +16,6 @@ import useImageUpload from "@/src/hooks/useImageUpload";
 import React from "react";
 import defaultImg from "@/src/assets/images/defaultImage.png";
 import client from "@/src/schema/client";
-import { CHECK_INGREDIENTNAME } from "@/src/queries/ingredientQueries";
 
 const Ingredients = () => {
   const dataGrid = useRef<DataGrid>(null);
@@ -89,17 +88,6 @@ const Ingredients = () => {
     dataGrid.current?.instance.cancelEditData();
     loadPanel.current?.instance.option("visible", false);
     fileUploaderRef.current?.instance.option("value", []);
-  }, []);
-
-  const isExitedName = useCallback((name: string): Promise<boolean> => {
-    return new Promise((resolve, reject) => {
-      client
-        .query({ query: CHECK_INGREDIENTNAME, variables: { name: name } })
-        .then((res) => resolve(res.data.checkIngredientName.success))
-        .catch((err) => {
-          resolve(false);
-        });
-    });
   }, []);
 
   return (

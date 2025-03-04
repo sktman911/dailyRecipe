@@ -12,6 +12,7 @@
     "@apollo/client": "^3.12.6",
     "@graphql-tools/schema": "^10.0.13",
     "@tailwindcss/typography": "^0.5.16",
+    "algoliasearch": "^5.20.3",
     "apexcharts": "^4.2.0",
     "apollo-server-micro": "^3.13.0",
     "cloudinary": "^2.5.1",
@@ -29,8 +30,7 @@
     "react": "^19.0.0",
     "react-apexcharts": "^1.4.1",
     "react-dom": "^19.0.0",
-    "sweetalert2": "^11.15.10",
-    "typesense": "^1.8.2"
+    "sweetalert2": "^11.15.10"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

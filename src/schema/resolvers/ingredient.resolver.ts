@@ -3,19 +3,22 @@ import { Ingredient } from "@/src/types/ingredient";
 import { Filter, RequestParams, Sort } from "@/src/types/requestParams";
 import { ResponseResult } from "@/src/types/responseResult";
 import cloudinary from "cloudinary";
-import Typesense from "typesense";
+import { algoliasearch } from "algoliasearch";
+import { GET_ALL_ACTIVE_INGREDIENTS } from "@/src/queries/ingredientQueries";
+import client from "../client";
 
-const client = new Typesense.Client({
-  nodes: [
-    {
-      host: "localhost",
-      port: 8108,
-      protocol: "http",
-    },
-  ],
-  apiKey: '',
-  connectionTimeoutSeconds: 3,
-});
+const algoliaClient = algoliasearch("G5MT2JAQ1G", "fcf85c1d147180220337ab519a25e4b8");
+
+const processRecords = async () => {
+  const dataRequest = await client.query({query: GET_ALL_ACTIVE_INGREDIENTS});
+
+  const data = await dataRequest.data;
+
+  return await algoliaClient.replaceAllObjects({
+    indexName: "ingredients",
+    objects: data,
+  });
+};
 
 const isValidName = async (ingredientName: string): Promise<boolean> => {
   const snapshot = await db
@@ -41,6 +44,8 @@ export const ingredientResolver = {
           query = query.where(condition.field, "==", condition.value);
         });
       }
+
+      processRecords();
 
       if (sorts?.length > 0) {
         sorts.forEach((condition) => {
@@ -68,23 +73,13 @@ export const ingredientResolver = {
         },
       };
     },
+    allIngredients: async() : Promise<Ingredient[]> => {
+      const snapshot = await db.collection("ingredients").get();
 
-    checkIngredientName: async (
-      _: any,
-      { name }: { name: string }
-    ): Promise<ResponseResult<Ingredient>> => {
-      const res = await isValidName(name);
-      if (res) {
-        return {
-          success: false,
-          status: 200,
-        };
-      }
-
-      return {
-        success: true,
-        status: 400,
-      };
+      return snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Ingredient[];     
     },
   },
   Mutation: {
