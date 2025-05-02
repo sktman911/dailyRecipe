@@ -8,10 +8,10 @@ import {
 } from "../queries/ingredientQueries";
 import Swal from "sweetalert2";
 
-export const store = new CustomStore({
+export const ingredientStore = new CustomStore({
   key: "id",
-  load: () => {
-    return client
+  load: async () => {
+    return await client
       .query({
         query: GET_INGREDIENTS,
       })

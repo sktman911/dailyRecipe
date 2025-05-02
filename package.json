@@ -21,7 +21,6 @@
     "flatpickr": "^4.6.13",
     "graphql": "^16.10.0",
     "graphql-http": "^1.22.3",
-    "graphql-upload": "^17.0.0",
     "graphql-upload-minimal": "^1.6.1",
     "graphql-yoga": "^5.10.6",
     "jsvectormap": "^1.6.0",

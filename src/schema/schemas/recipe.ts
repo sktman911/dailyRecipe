@@ -16,7 +16,7 @@ export const Recipe = gql`
     }
 
     input IngredientInput {
-        name: String!
+        id: String!
         quantity: Float!
     }
 

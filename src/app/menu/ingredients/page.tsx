@@ -5,14 +5,13 @@ import LoadPanel from "devextreme-react/load-panel";
 import { SpeedDialAction } from "devextreme-react/speed-dial-action";
 import FileUploader from "devextreme-react/file-uploader";
 import DefaultLayout from "@/src/components/Layouts/DefaultLayout";
-import { store } from "@/src/stores/ingredientStore";
+import { ingredientStore } from "@/src/stores/ingredientStore";
 import { useCallback, useRef } from "react";
 import useImageUpload from "@/src/hooks/useImageUpload";
 import React from "react";
 import defaultImg from "@/src/assets/images/defaultImage.png";
 import client from "@/src/schema/client";
 import { CHECK_INGREDIENTNAME } from "@/src/queries/ingredientQueries";
-import query from "devextreme/data/query";
 
 const Ingredients = () => {
   const dataGrid = useRef<DataGrid>(null);
@@ -60,7 +59,7 @@ const Ingredients = () => {
       e.data.image = uploadedImage?.url;
       e.data.imagePublicId = uploadedImage?.publicId;
     }
-    await store.insert(e.data);
+    await ingredientStore.insert(e.data);
     dataGrid.current?.instance.refresh();
     dataGrid.current?.instance.cancelEditData();
     loadPanel.current?.instance.option("visible", false);
@@ -80,22 +79,28 @@ const Ingredients = () => {
 
     const { __typename, ...newData } = data;
 
-    await store.update(rowData.id, newData);
+    await ingredientStore.update(rowData.id, newData);
     dataGrid.current?.instance.refresh();
     dataGrid.current?.instance.cancelEditData();
     loadPanel.current?.instance.option("visible", false);
     fileUploaderRef.current?.instance.option("value", []);
   }, []);
 
-  const isExitedName = useCallback(async (name : string) => {
-    const res = await client.query({ query: CHECK_INGREDIENTNAME,variables:{name: name}});
-    return res.data.success;
+  const isExitedName = useCallback((name: string): Promise<boolean> => {
+    return new Promise((resolve, reject) => {
+      client
+        .query({ query: CHECK_INGREDIENTNAME, variables: { name: name } })
+        .then((res) => resolve(res.data.checkIngredientName.success))
+        .catch((err) => {
+          resolve(false);
+        });
+    });
   }, []);
 
   return (
     <DefaultLayout>
       <DataGrid
-        dataSource={store}
+        dataSource={ingredientStore}
         showBorders={true}
         height={"auto"}
         noDataText="Chưa có dữ liệu"
@@ -110,22 +115,23 @@ const Ingredients = () => {
         />
         <Column
           dataField="name"
-          caption="Tên nguyên liệu"          
+          caption="Tên nguyên liệu"
           validationRules={[
             { type: "required", message: "Vui lòng nhập tên nguyên liệu" },
-            {type: "custom", message:"Tên nguyên liệu đã có trong hệ thống.", 
+            {
+              type: "async",
+              message: "Tên nguyên liệu đã có trong hệ thống.",
               validationCallback: async (e) => {
-                await isExitedName(e.value)
-                console.log(e.value)
-                return true;
-              }
-            }
+                const res = await isExitedName(e.value);
+                return res;
+              },
+            },
           ]}
         />
         <Column
           dataField="image"
           caption="Hình ảnh"
-          cellRender={(data) => (
+          cellRender={(data: any) => (
             <img
               src={data.value ? data.value : defaultImg.src}
               className="w-20 h-20"
@@ -173,6 +179,7 @@ const Ingredients = () => {
           popup={{
             width: 900,
             height: 600,
+            showCloseButton: true,
             showTitle: true,
             title: "Nguyên liệu",
             toolbarItems: [
@@ -185,12 +192,17 @@ const Ingredients = () => {
                   onClick: async (e: any) => {
                     const rowKey =
                       dataGrid.current?.instance.option("editing.editRowKey");
+                    console.log(rowKey);
                     const rowData = dataGrid.current?.instance
                       .getVisibleRows()
                       .find((row) => row.key === rowKey)?.data;
                     const files =
                       fileUploaderRef.current?.instance.option("value");
-                    if (files && files.length > 0) {
+                    if (
+                      files &&
+                      files.length > 0 &&
+                      !(rowKey as string).startsWith("_DX_KEY_")
+                    ) {
                       await updateDataWithImage(e, rowData);
                     } else {
                       dataGrid.current?.instance.saveEditData();

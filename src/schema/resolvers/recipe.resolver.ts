@@ -11,6 +11,21 @@ export const recipeResolver = {
     Mutation: {
         addRecipe: async (_:unknown, {recipe}: {recipe:Recipe}): Promise<Recipe> =>{
             recipe.createdDate = new Date().toISOString();
+
+
+            const ingredientReferences = await Promise.all(
+                recipe.ingredients.map(async (item) => {
+                  const ingredientRef = db.collection("ingredients").doc(item.id);
+                //   const ingredientDoc = await ingredientRef.get();
+    
+                  return {
+                    ingredient: ingredientRef, 
+                    quantity: item.quantity,  
+                  };
+                })
+              );
+
+            recipe.ingredients = ingredientReferences;
             const docRef = await db.collection("recipes").add(recipe);
             const snapshot = await docRef.get();
             return {id: snapshot.id, ...snapshot.data()} as Recipe;

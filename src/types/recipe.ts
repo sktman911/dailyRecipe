@@ -1,5 +1,3 @@
-import { IngredientQuantity } from "./ingredient";
-
 export interface Recipe {
     id: string;
     name: string;
@@ -8,6 +6,11 @@ export interface Recipe {
     description?: string;
     // category: number;
     ingredients: [IngredientQuantity];    
+}
+
+export interface IngredientQuantity{
+    id: string;
+    quantity: number;
 }
 
 
